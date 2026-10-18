@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoPulse - Gradual Wake Alarm Clock</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f6ff',
+              100: '#e0edff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'monospace']
+          },
+          animation: {
+            'pulse-gentle': 'pulseGentle 3s infinite ease-in-out',
+            'ring-alarm': 'ring 0.6s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            ring: {
+              '0%': { transform: 'rotate(-8deg) scale(1)' },
+              '100%': { transform: 'rotate(8deg) scale(1.05)' }
+            },
+            pulseGentle: {
+              '0%, 100%': { opacity: '0.2', transform: 'scale(1)' },
+              '50%': { opacity: '0.4', transform: 'scale(1.08)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .clock-digit {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+  <!-- Header / Navbar -->
+  <header class="w-full max-w-5xl mx-auto px-4 py-5 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <i class="fa-solid fa-clock text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-xl tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">ChronoPulse</h1>
+        <p class="text-xs text-slate-400 font-medium">Gradual Wake-Up Alarm Clock</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 sm:space-x-3">
+      <!-- 12h / 24h Toggle -->
+      <button id="formatToggleBtn" title="Toggle 12h / 24h format" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-all border border-slate-700/50">
+        <span id="formatText">24H</span>
+      </button>
+
+      <!-- Quick Test Audio Button -->
+      <button id="testAudioBtn" title="Test Web Audio & Fade-In Preview" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50">
+        <i class="fa-solid fa-volume-high text-sm"></i>
+      </button>
+      
+      <!-- Theme Toggle -->
+      <button id="themeToggleBtn" title="Toggle Light/Dark Theme" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50">
+        <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="w-full max-w-5xl mx-auto px-4 py-2 flex-grow flex flex-col items-center justify-start space-y-6">
+
+    <!-- Digital Clock Section -->
+    <section class="w-full text-center py-8 px-6 rounded-3xl bg-slate-800/40 backdrop-blur-md border border-slate-700/40 shadow-2xl relative overflow-hidden">
+      <!-- Glow decoration -->
+      <div class="absolute -top-24 -left-24 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Date Display -->
+      <div id="currentDate" class="text-xs sm:text-sm font-semibold tracking-wider text-blue-400 uppercase mb-2">
+        Loading date...
+      </div>
+
+      <!-- Digital Time Display -->
+      <div class="flex items-baseline justify-center space-x-1 sm:space-x-3">
+        <span id="clockHoursMinutes" class="clock-digit text-6xl sm:text-8xl md:text-9xl font-bold tracking-tight text-slate-100">
+          00:00
+        </span>
+        <div class="flex flex-col items-start">
+          <span id="clockSeconds" class="clock-digit text-2xl sm:text-3xl md:text-4xl font-semibold text-blue-400">
+            :00
+          </span>
+          <span id="clockAmpm" class="text-xs sm:text-sm font-bold tracking-wider text-slate-400 uppercase mt-1">
+            AM
+          </span>
+        </div>
+      </div>
+
+      <!-- Next Upcoming Alarm Banner -->
+      <div id="nextAlarmBanner" class="mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/60 border border-slate-700/50 text-xs sm:text-sm text-slate-300">
+        <i class="fa-regular fa-bell text-blue-400"></i>
+        <span>No upcoming alarms</span>
+      </div>
+    </section>
+
+    <!-- Content Grid: Add Alarm Form & Alarm List -->
+    <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Add/Edit Alarm Card (5 Cols) -->
+      <div class="lg:col-span-5 bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="formTitle" class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-100">
+            <i class="fa-solid fa-plus text-blue-400"></i> Add New Alarm
+          </h2>
+          <button id="cancelEditBtn" class="hidden text-xs text-slate-400 hover:text-slate-200 underline">
+            Cancel Edit
+          </button>
+        </div>
+
+        <form id="alarmForm" class="space-y-4">
+          <input type="hidden" id="editingAlarmId" value="">
+
+          <!-- Time Input -->
+          <div>
+            <label for="alarmTime" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Alarm Time
+            </label>
+            <input type="time" id="alarmTime" required class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-xl font-mono rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+          </div>
+
+          <!-- Label Input -->
+          <div>
+            <label for="alarmLabel" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Label / Description
+            </label>
+            <input type="text" id="alarmLabel" placeholder="e.g. Gentle Morning Wake Up" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+          </div>
+
+          <!-- Sound Selector -->
+          <div>
+            <label for="alarmSound" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Alarm Sound Pattern
+            </label>
+            <div class="flex gap-2">
+              <select id="alarmSound" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                <option value="chime">Gentle Chime</option>
+                <option value="bell">Soft Morning Bell</option>
+                <option value="waves">Calming Waves</option>
+                <option value="synth">Pulsing Synth</option>
+                <option value="digital">Classic Beep</option>
+              </select>
+              <button type="button" id="previewSoundBtn" class="px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-200 text-sm font-medium transition-all flex items-center justify-center shrink-0" title="Preview Sound with Fade-In">
+                <i class="fa-solid fa-play"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sound Fade-In Ramp Duration Selector -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label for="alarmFade" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Volume Fade-In Ramp
+              </label>
+              <span class="text-[11px] text-blue-400 font-medium">Gradual Wake</span>
+            </div>
+            <select id="alarmFade" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+              <option value="0">Immediate (No Fade)</option>
+              <option value="10">10 Seconds (Fast Ramp)</option>
+              <option value="30" selected>30 Seconds (Gentle Ramp)</option>
+              <option value="60">1 Minute (Smooth Wake)</option>
+              <option value="120">2 Minutes (Deep Sleep Ramp)</option>
+              <option value="300">5 Minutes (Ultra Soft Fade)</option>
+            </select>
+          </div>
+
+          <!-- Days of Week Selector -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              Repeat Days
+            </label>
+            <div class="grid grid-cols-7 gap-1" id="daysSelector">
+              <button type="button" data-day="0" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">S</button>
+              <button type="button" data-day="1" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">M</button>
+              <button type="button" data-day="2" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">T</button>
+              <button type="button" data-day="3" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">W</button>
+              <button type="button" data-day="4" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">T</button>
+              <button type="button" data-day="5" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">F</button>
+              <button type="button" data-day="6" class="day-btn py-2 text-xs font-semibold rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:border-slate-500 transition-all">S</button>
+            </div>
+          </div>
+
+          <!-- Snooze Duration Configuration -->
+          <div>
+            <label for="alarmSnoozeDuration" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Snooze Duration
+            </label>
+            <select id="alarmSnoozeDuration" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+              <option value="5">5 Minutes</option>
+              <option value="10" selected>10 Minutes</option>
+              <option value="15">15 Minutes</option>
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="saveAlarmBtn" class="w-full mt-2 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check"></i> Save Alarm
+          </button>
+        </form>
+      </div>
+
+      <!-- Alarms List Card (7 Cols) -->
+      <div class="lg:col-span-7 bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm flex flex-col min-h-[420px]">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-100">
+            <i class="fa-solid fa-list-ul text-blue-400"></i> Your Alarms
+          </h2>
+          <span id="alarmCountBadge" class="text-xs bg-slate-700 text-slate-300 font-medium px-2.5 py-1 rounded-full">
+            0 Alarms
+          </span>
+        </div>
+
+        <!-- Alarm Items List -->
+        <div id="alarmsList" class="space-y-3 overflow-y-auto max-h-[440px] pr-1 flex-grow">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex-grow flex flex-col items-center justify-center text-center py-10 text-slate-500">
+          <i class="fa-regular fa-clock text-4xl mb-3 text-slate-600"></i>
+          <p class="text-sm font-medium">No alarms set yet.</p>
+          <p class="text-xs text-slate-600 mt-1">Create one above with custom gradual fade-in sound!</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-5xl mx-auto px-4 py-5 text-center text-xs text-slate-500 border-t border-slate-800/60 mt-8">
+    <p>ChronoPulse &copy; Gradual Wake-Up Web Audio Alarm Clock. LocalStorage persistent.</p>
+  </footer>
+
+  <!-- Alarm Trigger Modal Popup / Ringing Screen -->
+  <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl hidden opacity-0 transition-opacity duration-300">
+    <!-- Gentle Pulse Ring Effect -->
+    <div class="absolute w-96 h-96 rounded-full bg-blue-500/20 animate-pulse-gentle pointer-events-none"></div>
+
+    <div class="relative bg-slate-900 border border-blue-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center z-10 transform scale-95 transition-transform duration-300">
+      
+      <!-- Alarm Bell Icon -->
+      <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-500/40 animate-ring-alarm">
+        <i class="fa-solid fa-bell text-white text-3xl"></i>
+      </div>
+
+      <!-- Live Clock Displayed in Modal -->
+      <div id="modalAlarmTime" class="clock-digit text-4xl sm:text-5xl font-extrabold text-white mb-1">
+        00:00
+      </div>
+
+      <!-- Alarm Label -->
+      <h3 id="modalAlarmLabel" class="text-lg font-semibold text-blue-400 mb-4 truncate px-2">
+        Morning Wake Up
+      </h3>
+
+      <!-- Dynamic Fade-In Volume Progress Bar -->
+      <div class="mb-6 bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
+        <div class="flex justify-between items-center text-xs text-slate-400 mb-1.5 font-medium">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-volume-high text-blue-400"></i> Sound Volume</span>
+          <span id="fadeProgressText" class="text-blue-400 font-mono font-bold">0%</span>
+        </div>
+        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
+          <div id="fadeProgressBar" class="bg-gradient-to-r from-blue-500 to-indigo-400 h-2.5 rounded-full transition-all duration-300 w-0"></div>
+        </div>
+        <div id="fadeRampDetails" class="text-[11px] text-slate-500 mt-1.5 flex justify-between">
+          <span>Gradual Ramp-Up</span>
+          <span id="fadeDurationLabel">30s Duration</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-3 sm:gap-4">
+        <!-- Snooze Button -->
+        <button id="snoozeBtn" class="py-3.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-bed"></i> <span id="snoozeBtnText">Snooze (10m)</span>
+        </button>
+
+        <!-- Dismiss Button -->
+        <button id="dismissBtn" class="py-3.5 px-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-xmark"></i> Dismiss
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast" class="fixed bottom-6 right-6 z-40 bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage" class="text-sm font-medium">Notification message</span>
+  </div>
+
+  <!-- Web Audio Synthesizer & App Logic JavaScript -->
+  <script>
+    /**
+     * Web Audio API Sound Synthesizer with Smooth Volume Ramp / Fade-In support
+     */
+    class SoundSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.isPlaying = false;
+        this.loopInterval = null;
+        this.fadeInterval = null;
+        this.fadeStartTime = 0;
+        this.fadeDurationSec = 30;
+        this.currentVolume = 0;
+        this.onFadeProgressCallback = null;
+      }
+
+      initContext() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Play tone with gain relative to master volume
+      playTone(freq, type = 'sine', duration = 0.5, volume = 0.3) {
+        this.initContext();
+        try {
+          const osc = this.ctx.createOscillator();
+          const toneGain = this.ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          toneGain.gain.setValueAtTime(volume, this.ctx.currentTime);
+          toneGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(toneGain);
+          toneGain.connect(this.masterGain);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          console.error("Audio Synthesis Error:", e);
+        }
+      }
+
+      // Sound Presets
+      playSoundPattern(soundType) {
+        this.initContext();
+        switch (soundType) {
+          case 'chime':
+            this.playChimePattern();
+            break;
+          case 'bell':
+            this.playBellPattern();
+            break;
+          case 'waves':
+            this.playWavesPattern();
+            break;
+          case 'synth':
+            this.playSynthPattern();
+            break;
+          case 'digital':
+            this.playDigitalPattern();
+            break;
+          default:
+            this.playChimePattern();
+        }
+      }
+
+      playChimePattern() {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            if (this.isPlaying) this.playTone(freq, 'sine', 1.4, 0.3);
+          }, idx * 220);
+        });
+      }
+
+      playBellPattern() {
+        this.playTone(440, 'sine', 2.8, 0.4);
+        this.playTone(880, 'sine', 2.2, 0.15);
+        this.playTone(1320, 'sine', 1.8, 0.08);
+      }
+
+      playWavesPattern() {
+        const notes = [220, 277.18, 329.63, 440]; // A3, C#4, E4, A4
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            if (this.isPlaying) this.playTone(freq, 'triangle', 2.5, 0.25);
+          }, idx * 350);
+        });
+      }
+
+      playSynthPattern() {
+        this.playTone(329.63, 'sawtooth', 0.4, 0.15);
+        setTimeout(() => this.playTone(440, 'sawtooth', 0.6, 0.2), 200);
+        setTimeout(() => this.playTone(659.25, 'sawtooth', 0.8, 0.25), 500);
+      }
+
+      playDigitalPattern() {
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            if (this.isPlaying) this.playTone(880, 'square', 0.08, 0.2);
+          }, i * 120);
+        }
+      }
+
+      /**
+       * Start sound loop with gradual GainNode fade-in ramping
+       */
+      startLoopWithFade(soundType, fadeDurationSeconds = 30, progressCallback = null) {
+        this.stopLoop();
+        this.initContext();
+
+        this.isPlaying = true;
+        this.fadeDurationSec = parseInt(fadeDurationSeconds, 10) || 0;
+        this.onFadeProgressCallback = progressCallback;
+
+        // Create Master Gain Node for smooth volume control
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.connect(this.ctx.destination);
+
+        const now = this.ctx.currentTime;
+
+        if (this.fadeDurationSec <= 0) {
+          // Immediate - No Fade
+          this.masterGain.gain.setValueAtTime(1.0, now);
+          this.currentVolume = 1.0;
+          if (this.onFadeProgressCallback) this.onFadeProgressCallback(100);
+        } else {
+          // Smooth Ramp up using Web Audio API linearRampToValueAtTime
+          this.masterGain.gain.setValueAtTime(0.0001, now);
+          this.masterGain.gain.linearRampToValueAtTime(1.0, now + this.fadeDurationSec);
+          this.fadeStartTime = Date.now();
+
+          // Monitor progress for UI progress bar
+          this.fadeInterval = setInterval(() => {
+            const elapsed = (Date.now() - this.fadeStartTime) / 1000;
+            const progress = Math.min(100, Math.round((elapsed / this.fadeDurationSec) * 100));
+            this.currentVolume = progress / 100;
+
+            if (this.onFadeProgressCallback) {
+              this.onFadeProgressCallback(progress);
+            }
+
+            if (progress >= 100) {
+              clearInterval(this.fadeInterval);
+              this.fadeInterval = null;
+            }
+          }, 200);
+        }
+
+        // Trigger first pattern immediately
+        this.playSoundPattern(soundType);
+
+        // Set repeating pattern interval
+        const intervalMs = soundType === 'digital' ? 1200 : 2800;
+        this.loopInterval = setInterval(() => {
+          if (this.isPlaying) {
+            this.playSoundPattern(soundType);
+          }
+        }, intervalMs);
+      }
+
+      stopLoop() {
+        this.isPlaying = false;
+        if (this.loopInterval) {
+          clearInterval(this.loopInterval);
+          this.loopInterval = null;
+        }
+        if (this.fadeInterval) {
+          clearInterval(this.fadeInterval);
+          this.fadeInterval = null;
+        }
+        if (this.masterGain && this.ctx) {
+          try {
+            this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+            this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+            this.masterGain.disconnect();
+          } catch(e) {}
+          this.masterGain = null;
+        }
+      }
+    }
+
+    /**
+     * Main Application Manager
+     */
+    class AlarmApp {
+      constructor() {
+        this.synth = new SoundSynthesizer();
+        this.alarms = [];
+        this.activeTriggeredAlarm = null;
+        this.is24HourFormat = false;
+        this.selectedDays = [];
+
+        this.initElements();
+        this.loadSettings();
+        this.loadAlarms();
+        this.bindEvents();
+        this.startClock();
+      }
+
+      initElements() {
+        // Clock elements
+        this.clockHoursMinutes = document.getElementById('clockHoursMinutes');
+        this.clockSeconds = document.getElementById('clockSeconds');
+        this.clockAmpm = document.getElementById('clockAmpm');
+        this.currentDateEl = document.getElementById('currentDate');
+        this.nextAlarmBanner = document.getElementById('nextAlarmBanner');
+
+        // Controls
+        this.formatToggleBtn = document.getElementById('formatToggleBtn');
+        this.formatText = document.getElementById('formatText');
+
+        // Form elements
+        this.alarmForm = document.getElementById('alarmForm');
+        this.alarmTimeInput = document.getElementById('alarmTime');
+        this.alarmLabelInput = document.getElementById('alarmLabel');
+        this.alarmSoundSelect = document.getElementById('alarmSound');
+        this.alarmFadeSelect = document.getElementById('alarmFade');
+        this.alarmSnoozeSelect = document.getElementById('alarmSnoozeDuration');
+        this.editingAlarmIdInput = document.getElementById('editingAlarmId');
+        this.formTitle = document.getElementById('formTitle');
+        this.cancelEditBtn = document.getElementById('cancelEditBtn');
+        this.previewSoundBtn = document.getElementById('previewSoundBtn');
+        this.dayBtns = document.querySelectorAll('.day-btn');
+
+        // List elements
+        this.alarmsList = document.getElementById('alarmsList');
+        this.emptyState = document.getElementById('emptyState');
+        this.alarmCountBadge = document.getElementById('alarmCountBadge');
+
+        // Modal elements
+        this.alarmModal = document.getElementById('alarmModal');
+        this.modalAlarmTime = document.getElementById('modalAlarmTime');
+        this.modalAlarmLabel = document.getElementById('modalAlarmLabel');
+        this.snoozeBtn = document.getElementById('snoozeBtn');
+        this.snoozeBtnText = document.getElementById('snoozeBtnText');
+        this.dismissBtn = document.getElementById('dismissBtn');
+        this.fadeProgressBar = document.getElementById('fadeProgressBar');
+        this.fadeProgressText = document.getElementById('fadeProgressText');
+        this.fadeDurationLabel = document.getElementById('fadeDurationLabel');
+
+        // Header actions
+        this.themeToggleBtn = document.getElementById('themeToggleBtn');
+        this.themeIcon = document.getElementById('themeIcon');
+        this.testAudioBtn = document.getElementById('testAudioBtn');
+
+        // Toast
+        this.toast = document.getElementById('toast');
+        this.toastMessage = document.getElementById('toastMessage');
+        this.toastIcon = document.getElementById('toastIcon');
+      }
+
+      bindEvents() {
+        // Form & Day Selectors
+        this.alarmForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        this.cancelEditBtn.addEventListener('click', () => this.resetForm());
+
+        this.dayBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const day = parseInt(btn.dataset.day, 10);
+            if (this.selectedDays.includes(day)) {
+              this.selectedDays = this.selectedDays.filter(d => d !== day);
+              btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
+              btn.classList.add('bg-slate-900/60', 'text-slate-400');
+            } else {
+              this.selectedDays.push(day);
+              btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500');
+              btn.classList.remove('bg-slate-900/60', 'text-slate-400');
+            }
+          });
+        });
+
+        // Preview sound with short fade test
+        this.previewSoundBtn.addEventListener('click', () => {
+          const sound = this.alarmSoundSelect.value;
+          const fadeSec = parseInt(this.alarmFadeSelect.value, 10);
+          
+          if (this.synth.isPlaying) {
+            this.synth.stopLoop();
+            this.previewSoundBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+            this.showToast('Preview stopped', 'fa-stop');
+          } else {
+            this.previewSoundBtn.innerHTML = `<i class="fa-solid fa-stop text-red-400"></i>`;
+            const testDuration = Math.min(fadeSec, 10); // cap preview ramp to 10s for quick demo
+            this.synth.startLoopWithFade(sound, testDuration, (pct) => {
+              if (pct >= 100 && testDuration === 0) {
+                // Auto reset icon after quick preview
+              }
+            });
+            this.showToast(`Testing ${sound} (${fadeSec}s fade)`, 'fa-volume-high');
+            
+            // Auto stop preview after 8 seconds
+            setTimeout(() => {
+              if (this.synth.isPlaying && !this.activeTriggeredAlarm) {
+                this.synth.stopLoop();
+                this.previewSoundBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+              }
+            }, 8000);
+          }
+        });
+
+        // Format Toggle
+        this.formatToggleBtn.addEventListener('click', () => {
+          this.is24HourFormat = !this.is24HourFormat;
+          localStorage.setItem('format24h', this.is24HourFormat ? 'true' : 'false');
+          this.formatText.textContent = this.is24HourFormat ? '12H' : '24H';
+          this.renderAlarms();
+          this.showToast(this.is24HourFormat ? 'Switched to 24-Hour Clock' : 'Switched to 12-Hour Clock', 'fa-clock');
+        });
+
+        // Modal actions
+        this.snoozeBtn.addEventListener('click', () => this.snoozeAlarm());
+        this.dismissBtn.addEventListener('click', () => this.dismissAlarm());
+
+        // Header actions
+        this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+        this.testAudioBtn.addEventListener('click', () => {
+          this.synth.startLoopWithFade('chime', 10, (pct) => {
+            this.showToast(`Audio Test: Volume ${pct}%`, 'fa-volume-high');
+          });
+          setTimeout(() => this.synth.stopLoop(), 6000);
+        });
+
+        this.setDefaultFormTime();
+      }
+
+      setDefaultFormTime() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 5);
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        this.alarmTimeInput.value = `${hours}:${minutes}`;
+      }
+
+      // --- Theme & Settings ---
+      loadSettings() {
+        const isDark = localStorage.getItem('theme') !== 'light';
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          this.themeIcon.className = 'fa-solid fa-sun text-amber-400 text-sm';
+        } else {
+          document.documentElement.classList.remove('dark');
+          this.themeIcon.className = 'fa-solid fa-moon text-indigo-600 text-sm';
+        }
+
+        this.is24HourFormat = localStorage.getItem('format24h') === 'true';
+        this.formatText.textContent = this.is24HourFormat ? '12H' : '24H';
+      }
+
+      toggleTheme() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        this.themeIcon.className = isDark ? 'fa-solid fa-sun text-amber-400 text-sm' : 'fa-solid fa-moon text-indigo-600 text-sm';
+        this.showToast(isDark ? 'Switched to Dark Mode' : 'Switched to Light Mode', isDark ? 'fa-moon' : 'fa-sun');
+      }
+
+      // --- Digital Clock Logic ---
+      startClock() {
+        const update = () => {
+          const now = new Date();
+          
+          let rawHours = now.getHours();
+          const rawMinutes = now.getMinutes();
+          const rawSeconds = now.getSeconds();
+
+          if (this.is24HourFormat) {
+            this.clockHoursMinutes.textContent = `${String(rawHours).padStart(2, '0')}:${String(rawMinutes).padStart(2, '0')}`;
+            this.clockAmpm.textContent = '24H';
+          } else {
+            const ampm = rawHours >= 12 ? 'PM' : 'AM';
+            const displayHours = rawHours % 12 || 12;
+            this.clockHoursMinutes.textContent = `${String(displayHours).padStart(2, '0')}:${String(rawMinutes).padStart(2, '0')}`;
+            this.clockAmpm.textContent = ampm;
+          }
+
+          this.clockSeconds.textContent = `:${String(rawSeconds).padStart(2, '0')}`;
+
+          const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+          this.currentDateEl.textContent = now.toLocaleDateString('en-US', options);
+
+          this.checkAlarms(now);
+        };
+
+        update();
+        setInterval(update, 1000);
+      }
+
+      // --- LocalStorage & Alarm CRUD ---
+      loadAlarms() {
+        try {
+          const saved = localStorage.getItem('chrono_alarms_v2');
+          this.alarms = saved ? JSON.parse(saved) : [];
+        } catch (e) {
+          this.alarms = [];
+        }
+        this.renderAlarms();
+        this.updateNextAlarmBanner();
+      }
+
+      saveAlarms() {
+        localStorage.setItem('chrono_alarms_v2', JSON.stringify(this.alarms));
+        this.renderAlarms();
+        this.updateNextAlarmBanner();
+      }
+
+      handleFormSubmit(e) {
+        e.preventDefault();
+        const timeVal = this.alarmTimeInput.value;
+        const labelVal = this.alarmLabelInput.value.trim() || 'Gentle Wake';
+        const soundVal = this.alarmSoundSelect.value;
+        const fadeVal = parseInt(this.alarmFadeSelect.value, 10);
+        const snoozeVal = parseInt(this.alarmSnoozeSelect.value, 10);
+        const editingId = this.editingAlarmIdInput.value;
+
+        if (!timeVal) return;
+
+        if (editingId) {
+          const idx = this.alarms.findIndex(a => a.id === editingId);
+          if (idx !== -1) {
+            this.alarms[idx].time = timeVal;
+            this.alarms[idx].label = labelVal;
+            this.alarms[idx].sound = soundVal;
+            this.alarms[idx].fadeDuration = fadeVal;
+            this.alarms[idx].snoozeDuration = snoozeVal;
+            this.alarms[idx].days = [...this.selectedDays];
+            this.alarms[idx].enabled = true;
+            this.showToast('Alarm updated successfully', 'fa-pen-to-square');
+          }
+        } else {
+          const newAlarm = {
+            id: 'alarm_' + Date.now(),
+            time: timeVal,
+            label: labelVal,
+            sound: soundVal,
+            fadeDuration: fadeVal,
+            snoozeDuration: snoozeVal,
+            days: [...this.selectedDays],
+            enabled: true,
+            snoozedUntil: null
+          };
+          this.alarms.push(newAlarm);
+          this.showToast('Alarm created with custom fade-in', 'fa-bell');
+        }
+
+        this.saveAlarms();
+        this.resetForm();
+      }
+
+      resetForm() {
+        this.alarmForm.reset();
+        this.editingAlarmIdInput.value = '';
+        this.selectedDays = [];
+        this.dayBtns.forEach(btn => {
+          btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
+          btn.classList.add('bg-slate-900/60', 'text-slate-400');
+        });
+        this.formTitle.innerHTML = `<i class="fa-solid fa-plus text-blue-400"></i> Add New Alarm`;
+        this.cancelEditBtn.classList.add('hidden');
+        this.setDefaultFormTime();
+      }
+
+      editAlarm(id) {
+        const alarm = this.alarms.find(a => a.id === id);
+        if (!alarm) return;
+
+        this.alarmTimeInput.value = alarm.time;
+        this.alarmLabelInput.value = alarm.label;
+        this.alarmSoundSelect.value = alarm.sound;
+        this.alarmFadeSelect.value = alarm.fadeDuration !== undefined ? alarm.fadeDuration : 30;
+        this.alarmSnoozeSelect.value = alarm.snoozeDuration || 10;
+        this.editingAlarmIdInput.value = alarm.id;
+
+        this.selectedDays = alarm.days ? [...alarm.days] : [];
+        this.dayBtns.forEach(btn => {
+          const day = parseInt(btn.dataset.day, 10);
+          if (this.selectedDays.includes(day)) {
+            btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500');
+            btn.classList.remove('bg-slate-900/60', 'text-slate-400');
+          } else {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
+            btn.classList.add('bg-slate-900/60', 'text-slate-400');
+          }
+        });
+
+        this.formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-400"></i> Edit Alarm`;
+        this.cancelEditBtn.classList.remove('hidden');
+        this.alarmTimeInput.focus();
+      }
+
+      deleteAlarm(id) {
+        this.alarms = this.alarms.filter(a => a.id !== id);
+        this.saveAlarms();
+        this.showToast('Alarm removed', 'fa-trash-can');
+      }
+
+      toggleAlarmEnabled(id) {
+        const alarm = this.alarms.find(a => a.id === id);
+        if (alarm) {
+          alarm.enabled = !alarm.enabled;
+          alarm.snoozedUntil = null;
+          this.saveAlarms();
+          this.showToast(alarm.enabled ? 'Alarm enabled' : 'Alarm disabled', alarm.enabled ? 'fa-toggle-on' : 'fa-toggle-off');
+        }
+      }
+
+      // --- Rendering List ---
+      renderAlarms() {
+        this.alarmsList.innerHTML = '';
+        this.alarmCountBadge.textContent = `${this.alarms.length} ${this.alarms.length === 1 ? 'Alarm' : 'Alarms'}`;
+
+        if (this.alarms.length === 0) {
+          this.emptyState.classList.remove('hidden');
+          return;
+        }
+
+        this.emptyState.classList.add('hidden');
+        const sorted = [...this.alarms].sort((a, b) => a.time.localeCompare(b.time));
+
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        sorted.forEach(alarm => {
+          const item = document.createElement('div');
+          item.className = `flex items-center justify-between p-4 rounded-xl border transition-all ${
+            alarm.enabled 
+              ? 'bg-slate-900/60 border-slate-700/60 hover:border-slate-600' 
+              : 'bg-slate-900/20 border-slate-800/40 opacity-50'
+          }`;
+
+          // Time Formatting
+          let timeFormatted = alarm.time;
+          if (!this.is24HourFormat) {
+            const [h, m] = alarm.time.split(':');
+            let hours = parseInt(h, 10);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            timeFormatted = `${String(hours).padStart(2, '0')}:${m} ${ampm}`;
+          }
+
+          // Repeat days string
+          let daysStr = 'Everyday';
+          if (alarm.days && alarm.days.length > 0 && alarm.days.length < 7) {
+            daysStr = alarm.days.sort().map(d => dayNames[d]).join(', ');
+          }
+
+          // Fade text label
+          const fadeSec = alarm.fadeDuration !== undefined ? alarm.fadeDuration : 30;
+          const fadeLabel = fadeSec === 0 ? 'Immediate' : `${fadeSec}s Fade`;
+
+          item.innerHTML = `
+            <div class="flex items-center space-x-4">
+              <!-- Toggle Switch -->
+              <button onclick="app.toggleAlarmEnabled('${alarm.id}')" title="${alarm.enabled ? 'Disable' : 'Enable'}" class="text-2xl transition-all">
+                ${alarm.enabled 
+                  ? '<i class="fa-solid fa-toggle-on text-blue-500"></i>' 
+                  : '<i class="fa-solid fa-toggle-off text-slate-600"></i>'
+                }
+              </button>
+
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="clock-digit text-xl sm:text-2xl font-bold text-slate-100">${timeFormatted}</span>
+                  ${alarm.snoozedUntil ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold px-2 py-0.5 rounded-full"><i class="fa-solid fa-bed text-[9px] mr-1"></i>Snoozed</span>' : ''}
+                </div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400 mt-1">
+                  <span class="font-medium text-slate-300">${this.escapeHtml(alarm.label)}</span>
+                  <span>&bull;</span>
+                  <span class="text-blue-400"><i class="fa-solid fa-chart-line text-[10px] mr-1"></i>${fadeLabel}</span>
+                  <span>&bull;</span>
+                  <span class="text-slate-400">${daysStr}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-1">
+              <button onclick="app.editAlarm('${alarm.id}')" class="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all" title="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="app.deleteAlarm('${alarm.id}')" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all" title="Delete">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          `;
+
+          this.alarmsList.appendChild(item);
+        });
+      }
+
+      updateNextAlarmBanner() {
+        const enabledAlarms = this.alarms.filter(a => a.enabled);
+        if (enabledAlarms.length === 0) {
+          this.nextAlarmBanner.innerHTML = `<i class="fa-regular fa-bell text-slate-500"></i> <span>No active alarms</span>`;
+          return;
+        }
+
+        const now = new Date();
+        let closestMinDiff = Infinity;
+        let closestAlarm = null;
+
+        enabledAlarms.forEach(alarm => {
+          const [h, m] = alarm.time.split(':');
+          let alarmDate = new Date();
+          alarmDate.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+
+          if (alarm.snoozedUntil) {
+            alarmDate = new Date(alarm.snoozedUntil);
+          } else if (alarmDate <= now) {
+            alarmDate.setDate(alarmDate.getDate() + 1);
+          }
+
+          const diffMinutes = (alarmDate - now) / (1000 * 60);
+          if (diffMinutes < closestMinDiff) {
+            closestMinDiff = diffMinutes;
+            closestAlarm = alarm;
+          }
+        });
+
+        if (closestAlarm) {
+          const hoursLeft = Math.floor(closestMinDiff / 60);
+          const minsLeft = Math.round(closestMinDiff % 60);
+
+          let timeStr = '';
+          if (hoursLeft > 0) timeStr += `${hoursLeft}h `;
+          timeStr += `${minsLeft}m`;
+
+          this.nextAlarmBanner.innerHTML = `
+            <i class="fa-solid fa-bell text-blue-400"></i>
+            <span>Next alarm in <strong class="text-blue-400">${timeStr}</strong> (${this.escapeHtml(closestAlarm.label)})</span>
+          `;
+        }
+      }
+
+      // --- Triggering Alarm ---
+      checkAlarms(nowDate) {
+        if (this.activeTriggeredAlarm) return;
+
+        const currentHHMM = `${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`;
+        const currentSeconds = nowDate.getSeconds();
+        const currentDay = nowDate.getDay();
+
+        this.alarms.forEach(alarm => {
+          if (!alarm.enabled) return;
+
+          // Check if specific days were set
+          if (alarm.days && alarm.days.length > 0 && !alarm.days.includes(currentDay)) {
+            return;
+          }
+
+          // Handle Snooze Trigger
+          if (alarm.snoozedUntil) {
+            if (nowDate.getTime() >= alarm.snoozedUntil) {
+              alarm.snoozedUntil = null;
+              this.triggerAlarm(alarm);
+            }
+            return;
+          }
+
+          // Handle Normal Trigger at second 0
+          if (alarm.time === currentHHMM && currentSeconds === 0) {
+            this.triggerAlarm(alarm);
+          }
+        });
+      }
+
+      triggerAlarm(alarm) {
+        this.activeTriggeredAlarm = alarm;
+
+        // Modal Time display
+        let timeDisplay = alarm.time;
+        if (!this.is24HourFormat) {
+          const [h, m] = alarm.time.split(':');
+          let hours = parseInt(h, 10);
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12 || 12;
+          timeDisplay = `${String(hours).padStart(2, '0')}:${m} ${ampm}`;
+        }
+
+        this.modalAlarmTime.textContent = timeDisplay;
+        this.modalAlarmLabel.textContent = alarm.label;
+
+        const snoozeMins = alarm.snoozeDuration || 10;
+        this.snoozeBtnText.textContent = `Snooze (${snoozeMins}m)`;
+
+        const fadeSec = alarm.fadeDuration !== undefined ? alarm.fadeDuration : 30;
+        this.fadeDurationLabel.textContent = fadeSec === 0 ? 'Immediate Volume' : `${fadeSec}s Fade Duration`;
+
+        // Reset progress bar
+        this.fadeProgressBar.style.width = '0%';
+        this.fadeProgressText.textContent = '0%';
+
+        // Display Modal
+        this.alarmModal.classList.remove('hidden');
+        setTimeout(() => {
+          this.alarmModal.classList.remove('opacity-0');
+          this.alarmModal.firstElementChild.classList.remove('scale-95');
+        }, 10);
+
+        // Start Web Audio Loop with Volume Ramp Fade-In
+        this.synth.startLoopWithFade(alarm.sound, fadeSec, (progressPct) => {
+          this.fadeProgressBar.style.width = `${progressPct}%`;
+          this.fadeProgressText.textContent = `${progressPct}%`;
+        });
+      }
+
+      snoozeAlarm() {
+        if (!this.activeTriggeredAlarm) return;
+
+        const snoozeMins = this.activeTriggeredAlarm.snoozeDuration || 10;
+        const snoozeTime = new Date().getTime() + snoozeMins * 60 * 1000;
+        const idx = this.alarms.findIndex(a => a.id === this.activeTriggeredAlarm.id);
+        
+        if (idx !== -1) {
+          this.alarms[idx].snoozedUntil = snoozeTime;
+          this.saveAlarms();
+        }
+
+        this.showToast(`Snoozed for ${snoozeMins} minutes`, 'fa-bed');
+        this.closeAlarmModal();
+      }
+
+      dismissAlarm() {
+        if (!this.activeTriggeredAlarm) return;
+
+        const idx = this.alarms.findIndex(a => a.id === this.activeTriggeredAlarm.id);
+        if (idx !== -1) {
+          this.alarms[idx].snoozedUntil = null;
+          this.saveAlarms();
+        }
+
+        this.showToast('Alarm dismissed', 'fa-check');
+        this.closeAlarmModal();
+      }
+
+      closeAlarmModal() {
+        this.synth.stopLoop();
+        this.alarmModal.classList.add('opacity-0');
+        this.alarmModal.firstElementChild.classList.add('scale-95');
+
+        setTimeout(() => {
+          this.alarmModal.classList.add('hidden');
+          this.activeTriggeredAlarm = null;
+        }, 300);
+      }
+
+      // --- Utilities ---
+      showToast(msg, iconClass = 'fa-circle-check') {
+        this.toastMessage.textContent = msg;
+        this.toastIcon.className = `fa-solid ${iconClass} text-blue-400`;
+
+        this.toast.classList.remove('translate-y-20', 'opacity-0');
+
+        setTimeout(() => {
+          this.toast.classList.add('translate-y-20', 'opacity-0');
+        }, 3200);
+      }
+
+      escapeHtml(str) {
+        return str.replace(/[&<>"']/g, (m) => {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          }[m];
+        });
+      }
+    }
+
+    // Initialize Application
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new AlarmApp();
+    });
+  </script>
+</body>
+</html>
