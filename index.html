@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChronoPulse - Gradual Wake Alarm Clock</title>
-  <!-- Tailwind CSS CSS CDN -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -194,6 +194,16 @@
             </div>
           </div>
 
+          <!-- Audio Output Device Selector (Speakers/Headphones) -->
+          <div>
+            <label for="audioOutputSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Audio Output (Speakers / Headphones)
+            </label>
+            <select id="audioOutputSelect" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+              <option value="">Default System Output</option>
+            </select>
+          </div>
+
           <!-- Sound Fade-In Ramp Duration Selector -->
           <div>
             <div class="flex justify-between items-center mb-1.5">
@@ -354,15 +364,37 @@
         this.fadeDurationSec = 30;
         this.currentVolume = 0;
         this.onFadeProgressCallback = null;
+        this.selectedSinkId = '';
       }
 
-      initContext() {
+      async initContext() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           this.ctx = new AudioContext();
         }
+
+        // Apply explicit audio output sink device if supported
+        if (this.ctx.setSinkId && this.selectedSinkId) {
+          try {
+            await this.ctx.setSinkId(this.selectedSinkId);
+          } catch (err) {
+            console.error("Failed to set audio output device:", err);
+          }
+        }
+
         if (this.ctx.state === 'suspended') {
-          this.ctx.resume();
+          await this.ctx.resume();
+        }
+      }
+
+      async setOutputDevice(sinkId) {
+        this.selectedSinkId = sinkId;
+        if (this.ctx && this.ctx.setSinkId) {
+          try {
+            await this.ctx.setSinkId(sinkId);
+          } catch (err) {
+            console.error("Failed to change sink ID:", err);
+          }
         }
       }
 
@@ -449,9 +481,9 @@
         }
       }
 
-      startLoopWithFade(soundType, fadeDurationSeconds = 30, progressCallback = null) {
+      async startLoopWithFade(soundType, fadeDurationSeconds = 30, progressCallback = null) {
         this.stopLoop();
-        this.initContext();
+        await this.initContext();
 
         this.isPlaying = true;
         this.fadeDurationSec = parseInt(fadeDurationSeconds, 10) || 0;
@@ -534,6 +566,7 @@
         this.loadAlarms();
         this.bindEvents();
         this.requestNotificationPermission();
+        this.loadAudioDevices();
         this.startClock();
       }
 
@@ -551,6 +584,7 @@
         this.alarmTimeInput = document.getElementById('alarmTime');
         this.alarmLabelInput = document.getElementById('alarmLabel');
         this.alarmSoundSelect = document.getElementById('alarmSound');
+        this.audioOutputSelect = document.getElementById('audioOutputSelect');
         this.alarmFadeSelect = document.getElementById('alarmFade');
         this.alarmSnoozeSelect = document.getElementById('alarmSnoozeDuration');
         this.editingAlarmIdInput = document.getElementById('editingAlarmId');
@@ -601,6 +635,11 @@
           });
         });
 
+        this.audioOutputSelect.addEventListener('change', (e) => {
+          this.synth.setOutputDevice(e.target.value);
+          this.showToast('Audio output device updated', 'fa-volume-high');
+        });
+
         this.previewSoundBtn.addEventListener('click', () => {
           const sound = this.alarmSoundSelect.value;
           const fadeSec = parseInt(this.alarmFadeSelect.value, 10);
@@ -643,7 +682,6 @@
           setTimeout(() => this.synth.stopLoop(), 6000);
         });
 
-        // Visibility Change listener: catch up if tab was minimized/backgrounded
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden) {
             this.checkAlarms(new Date());
@@ -651,6 +689,24 @@
         });
 
         this.setDefaultFormTime();
+      }
+
+      async loadAudioDevices() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+          
+          this.audioOutputSelect.innerHTML = '<option value="">Default System Output</option>';
+          audioOutputs.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.textContent = device.label || `Speaker / Output ${index + 1}`;
+            this.audioOutputSelect.appendChild(option);
+          });
+        } catch (err) {
+          console.error("Could not load audio output devices:", err);
+        }
       }
 
       requestNotificationPermission() {
@@ -978,7 +1034,6 @@
           const alarmTotalMinutes = alarmH * 60 + alarmM;
           const currentTotalMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
 
-          // Buffer window of 5 seconds to prevent missed checks due to tab throttling
           if (currentTotalMinutes === alarmTotalMinutes && nowDate.getSeconds() <= 5) {
             this.triggerAlarm(alarm);
           }
