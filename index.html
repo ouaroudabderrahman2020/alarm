@@ -58,7 +58,6 @@
       font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
     }
-    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -89,17 +88,14 @@
     </div>
 
     <div class="flex items-center space-x-2 sm:space-x-3">
-      <!-- 12h / 24h Toggle -->
       <button id="formatToggleBtn" title="Toggle 12h / 24h format" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-all border border-slate-700/50">
         <span id="formatText">24H</span>
       </button>
 
-      <!-- Quick Test Audio Button -->
       <button id="testAudioBtn" title="Test Web Audio & Fade-In Preview" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50">
         <i class="fa-solid fa-volume-high text-sm"></i>
       </button>
       
-      <!-- Theme Toggle -->
       <button id="themeToggleBtn" title="Toggle Light/Dark Theme" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50">
         <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
       </button>
@@ -111,16 +107,13 @@
 
     <!-- Digital Clock Section -->
     <section class="w-full text-center py-8 px-6 rounded-3xl bg-slate-800/40 backdrop-blur-md border border-slate-700/40 shadow-2xl relative overflow-hidden">
-      <!-- Glow decoration -->
       <div class="absolute -top-24 -left-24 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -right-24 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Date Display -->
       <div id="currentDate" class="text-xs sm:text-sm font-semibold tracking-wider text-blue-400 uppercase mb-2">
         Loading date...
       </div>
 
-      <!-- Digital Time Display -->
       <div class="flex items-baseline justify-center space-x-1 sm:space-x-3">
         <span id="clockHoursMinutes" class="clock-digit text-6xl sm:text-8xl md:text-9xl font-bold tracking-tight text-slate-100">
           00:00
@@ -135,17 +128,16 @@
         </div>
       </div>
 
-      <!-- Next Upcoming Alarm Banner -->
       <div id="nextAlarmBanner" class="mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/60 border border-slate-700/50 text-xs sm:text-sm text-slate-300">
         <i class="fa-regular fa-bell text-blue-400"></i>
         <span>No upcoming alarms</span>
       </div>
     </section>
 
-    <!-- Content Grid: Add Alarm Form & Alarm List -->
+    <!-- Content Grid -->
     <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
-      <!-- Add/Edit Alarm Card (5 Cols) -->
+      <!-- Add/Edit Alarm Card -->
       <div class="lg:col-span-5 bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm">
         <div class="flex items-center justify-between mb-4">
           <h2 id="formTitle" class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-100">
@@ -159,7 +151,6 @@
         <form id="alarmForm" class="space-y-4">
           <input type="hidden" id="editingAlarmId" value="">
 
-          <!-- Time Input -->
           <div>
             <label for="alarmTime" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Alarm Time
@@ -167,7 +158,6 @@
             <input type="time" id="alarmTime" required class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-xl font-mono rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
           </div>
 
-          <!-- Label Input -->
           <div>
             <label for="alarmLabel" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Label / Description
@@ -175,7 +165,6 @@
             <input type="text" id="alarmLabel" placeholder="e.g. Gentle Morning Wake Up" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
           </div>
 
-          <!-- Sound Selector -->
           <div>
             <label for="alarmSound" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Alarm Sound Pattern
@@ -194,11 +183,22 @@
             </div>
           </div>
 
-          <!-- Audio Output Device Selection & Unlock Prompt -->
+          <!-- Dual Output Mode Selection -->
+          <div>
+            <label for="audioModeSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Output Destination Mode
+            </label>
+            <select id="audioModeSelect" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+              <option value="single">Single Selected Device</option>
+              <option value="both">Both (Speakers & Headphones Simultaneously)</option>
+            </select>
+          </div>
+
+          <!-- Audio Output Device Selection -->
           <div>
             <div class="flex justify-between items-center mb-1.5">
               <label for="audioOutputSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Audio Output (Speaker Selection)
+                Target Speaker Device
               </label>
               <button type="button" id="selectSpeakerPromptBtn" class="text-[11px] text-blue-400 hover:underline font-medium flex items-center gap-1">
                 <i class="fa-solid fa-unlock text-[10px]"></i> Unlock Speakers List
@@ -209,7 +209,6 @@
             </select>
           </div>
 
-          <!-- Sound Fade-In Ramp Duration Selector -->
           <div>
             <div class="flex justify-between items-center mb-1.5">
               <label for="alarmFade" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -227,7 +226,6 @@
             </select>
           </div>
 
-          <!-- Days of Week Selector -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
               Repeat Days
@@ -243,7 +241,6 @@
             </div>
           </div>
 
-          <!-- Snooze Duration Configuration -->
           <div>
             <label for="alarmSnoozeDuration" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Snooze Duration
@@ -255,14 +252,13 @@
             </select>
           </div>
 
-          <!-- Submit Button -->
           <button type="submit" id="saveAlarmBtn" class="w-full mt-2 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-check"></i> Save Alarm
           </button>
         </form>
       </div>
 
-      <!-- Alarms List Card (7 Cols) -->
+      <!-- Alarms List Card -->
       <div class="lg:col-span-7 bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm flex flex-col min-h-[420px]">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-100">
@@ -273,12 +269,8 @@
           </span>
         </div>
 
-        <!-- Alarm Items List -->
-        <div id="alarmsList" class="space-y-3 overflow-y-auto max-h-[440px] pr-1 flex-grow">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="alarmsList" class="space-y-3 overflow-y-auto max-h-[440px] pr-1 flex-grow"></div>
 
-        <!-- Empty State -->
         <div id="emptyState" class="hidden flex-grow flex flex-col items-center justify-center text-center py-10 text-slate-500">
           <i class="fa-regular fa-clock text-4xl mb-3 text-slate-600"></i>
           <p class="text-sm font-medium">No alarms set yet.</p>
@@ -294,29 +286,23 @@
     <p>ChronoPulse &copy; Gradual Wake-Up Web Audio Alarm Clock. LocalStorage persistent.</p>
   </footer>
 
-  <!-- Alarm Trigger Modal Popup / Ringing Screen -->
+  <!-- Alarm Trigger Modal Popup -->
   <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl hidden opacity-0 transition-opacity duration-300">
-    <!-- Gentle Pulse Ring Effect -->
     <div class="absolute w-96 h-96 rounded-full bg-blue-500/20 animate-pulse-gentle pointer-events-none"></div>
 
     <div class="relative bg-slate-900 border border-blue-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center z-10 transform scale-95 transition-transform duration-300">
-      
-      <!-- Alarm Bell Icon -->
       <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-500/40 animate-ring-alarm">
         <i class="fa-solid fa-bell text-white text-3xl"></i>
       </div>
 
-      <!-- Live Clock Displayed in Modal -->
       <div id="modalAlarmTime" class="clock-digit text-4xl sm:text-5xl font-extrabold text-white mb-1">
         00:00
       </div>
 
-      <!-- Alarm Label -->
       <h3 id="modalAlarmLabel" class="text-lg font-semibold text-blue-400 mb-4 truncate px-2">
         Morning Wake Up
       </h3>
 
-      <!-- Dynamic Fade-In Volume Progress Bar -->
       <div class="mb-6 bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
         <div class="flex justify-between items-center text-xs text-slate-400 mb-1.5 font-medium">
           <span class="flex items-center gap-1.5"><i class="fa-solid fa-volume-high text-blue-400"></i> Sound Volume</span>
@@ -331,14 +317,11 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="grid grid-cols-2 gap-3 sm:gap-4">
-        <!-- Snooze Button -->
         <button id="snoozeBtn" class="py-3.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
           <i class="fa-solid fa-bed"></i> <span id="snoozeBtnText">Snooze (10m)</span>
         </button>
 
-        <!-- Dismiss Button -->
         <button id="dismissBtn" class="py-3.5 px-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center gap-2">
           <i class="fa-solid fa-xmark"></i> Dismiss
         </button>
@@ -353,205 +336,194 @@
     <span id="toastMessage" class="text-sm font-medium">Notification message</span>
   </div>
 
-  <!-- Web Audio Synthesizer & App Logic JavaScript -->
   <script>
     /**
-     * Web Audio API Sound Synthesizer with Smooth Volume Ramp / Fade-In support
+     * Web Audio API Synthesizer supporting Dual Output simultaneously
      */
     class SoundSynthesizer {
       constructor() {
-        this.ctx = null;
-        this.masterGain = null;
+        this.ctxPrimary = null;
+        this.ctxSecondary = null;
+        this.masterGainPrimary = null;
+        this.masterGainSecondary = null;
         this.isPlaying = false;
         this.loopInterval = null;
         this.fadeInterval = null;
         this.fadeStartTime = 0;
         this.fadeDurationSec = 30;
-        this.currentVolume = 0;
-        this.onFadeProgressCallback = null;
         this.selectedSinkId = '';
+        this.playBothMode = false;
       }
 
-      async initContext() {
-        if (!this.ctx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          this.ctx = new AudioContext();
+      async initContexts() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+        if (!this.ctxPrimary) {
+          this.ctxPrimary = new AudioContext();
+        }
+        if (this.ctxPrimary.state === 'suspended') {
+          await this.ctxPrimary.resume();
         }
 
-        // Apply explicit audio output sink device if supported
-        if (this.ctx.setSinkId && this.selectedSinkId) {
-          try {
-            await this.ctx.setSinkId(this.selectedSinkId);
-          } catch (err) {
-            console.error("Failed to set audio output device:", err);
+        if (this.playBothMode && this.selectedSinkId) {
+          if (!this.ctxSecondary) {
+            this.ctxSecondary = new AudioContext();
           }
-        }
-
-        if (this.ctx.state === 'suspended') {
-          await this.ctx.resume();
+          if (this.ctxSecondary.setSinkId) {
+            try {
+              await this.ctxSecondary.setSinkId(this.selectedSinkId);
+            } catch (e) {
+              console.error("Secondary output sink error:", e);
+            }
+          }
+          if (this.ctxSecondary.state === 'suspended') {
+            await this.ctxSecondary.resume();
+          }
+        } else if (!this.playBothMode && this.selectedSinkId && this.ctxPrimary.setSinkId) {
+          try {
+            await this.ctxPrimary.setSinkId(this.selectedSinkId);
+          } catch(e) {}
         }
       }
 
-      async setOutputDevice(sinkId) {
+      setModeAndSink(isBoth, sinkId) {
+        this.playBothMode = isBoth;
         this.selectedSinkId = sinkId;
-        if (this.ctx && this.ctx.setSinkId) {
-          try {
-            await this.ctx.setSinkId(sinkId);
-          } catch (err) {
-            console.error("Failed to change sink ID:", err);
-          }
-        }
       }
 
-      playTone(freq, type = 'sine', duration = 0.5, volume = 0.3) {
-        this.initContext();
+      playToneOnCtx(ctx, masterGain, freq, type = 'sine', duration = 0.5, volume = 0.3) {
+        if (!ctx || !masterGain) return;
         try {
-          const osc = this.ctx.createOscillator();
-          const toneGain = this.ctx.createGain();
+          const osc = ctx.createOscillator();
+          const toneGain = ctx.createGain();
 
           osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-          toneGain.gain.setValueAtTime(volume, this.ctx.currentTime);
-          toneGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          toneGain.gain.setValueAtTime(volume, ctx.currentTime);
+          toneGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
 
           osc.connect(toneGain);
-          toneGain.connect(this.masterGain);
+          toneGain.connect(masterGain);
 
           osc.start();
-          osc.stop(this.ctx.currentTime + duration);
+          osc.stop(ctx.currentTime + duration);
         } catch (e) {
-          console.error("Audio Synthesis Error:", e);
+          console.error("Tone playback error:", e);
         }
       }
 
       playSoundPattern(soundType) {
-        this.initContext();
-        switch (soundType) {
-          case 'chime':
-            this.playChimePattern();
-            break;
-          case 'bell':
-            this.playBellPattern();
-            break;
-          case 'waves':
-            this.playWavesPattern();
-            break;
-          case 'synth':
-            this.playSynthPattern();
-            break;
-          case 'digital':
-            this.playDigitalPattern();
-            break;
-          default:
-            this.playChimePattern();
-        }
-      }
+        const triggerPattern = (ctx, masterGain) => {
+          const playTone = (freq, type, duration, volume) => this.playToneOnCtx(ctx, masterGain, freq, type, duration, volume);
+          
+          switch (soundType) {
+            case 'chime':
+              [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                setTimeout(() => { if (this.isPlaying) playTone(f, 'sine', 1.4, 0.3); }, i * 220);
+              });
+              break;
+            case 'bell':
+              playTone(440, 'sine', 2.8, 0.4);
+              playTone(880, 'sine', 2.2, 0.15);
+              playTone(1320, 'sine', 1.8, 0.08);
+              break;
+            case 'waves':
+              [220, 277.18, 329.63, 440].forEach((f, i) => {
+                setTimeout(() => { if (this.isPlaying) playTone(f, 'triangle', 2.5, 0.25); }, i * 350);
+              });
+              break;
+            case 'synth':
+              playTone(329.63, 'sawtooth', 0.4, 0.15);
+              setTimeout(() => playTone(440, 'sawtooth', 0.6, 0.2), 200);
+              setTimeout(() => playTone(659.25, 'sawtooth', 0.8, 0.25), 500);
+              break;
+            case 'digital':
+              for (let i = 0; i < 3; i++) {
+                setTimeout(() => { if (this.isPlaying) playTone(880, 'square', 0.08, 0.2); }, i * 120);
+              }
+              break;
+          }
+        };
 
-      playChimePattern() {
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-          setTimeout(() => {
-            if (this.isPlaying) this.playTone(freq, 'sine', 1.4, 0.3);
-          }, idx * 220);
-        });
-      }
-
-      playBellPattern() {
-        this.playTone(440, 'sine', 2.8, 0.4);
-        this.playTone(880, 'sine', 2.2, 0.15);
-        this.playTone(1320, 'sine', 1.8, 0.08);
-      }
-
-      playWavesPattern() {
-        const notes = [220, 277.18, 329.63, 440];
-        notes.forEach((freq, idx) => {
-          setTimeout(() => {
-            if (this.isPlaying) this.playTone(freq, 'triangle', 2.5, 0.25);
-          }, idx * 350);
-        });
-      }
-
-      playSynthPattern() {
-        this.playTone(329.63, 'sawtooth', 0.4, 0.15);
-        setTimeout(() => this.playTone(440, 'sawtooth', 0.6, 0.2), 200);
-        setTimeout(() => this.playTone(659.25, 'sawtooth', 0.8, 0.25), 500);
-      }
-
-      playDigitalPattern() {
-        for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            if (this.isPlaying) this.playTone(880, 'square', 0.08, 0.2);
-          }, i * 120);
+        triggerPattern(this.ctxPrimary, this.masterGainPrimary);
+        if (this.playBothMode && this.ctxSecondary) {
+          triggerPattern(this.ctxSecondary, this.masterGainSecondary);
         }
       }
 
       async startLoopWithFade(soundType, fadeDurationSeconds = 30, progressCallback = null) {
         this.stopLoop();
-        await this.initContext();
+        await this.initContexts();
 
         this.isPlaying = true;
         this.fadeDurationSec = parseInt(fadeDurationSeconds, 10) || 0;
-        this.onFadeProgressCallback = progressCallback;
 
-        this.masterGain = this.ctx.createGain();
-        this.masterGain.connect(this.ctx.destination);
+        this.masterGainPrimary = this.ctxPrimary.createGain();
+        this.masterGainPrimary.connect(this.ctxPrimary.destination);
 
-        const now = this.ctx.currentTime;
+        if (this.playBothMode && this.ctxSecondary) {
+          this.masterGainSecondary = this.ctxSecondary.createGain();
+          this.masterGainSecondary.connect(this.ctxSecondary.destination);
+        }
 
-        if (this.fadeDurationSec <= 0) {
-          this.masterGain.gain.setValueAtTime(1.0, now);
-          this.currentVolume = 1.0;
-          if (this.onFadeProgressCallback) this.onFadeProgressCallback(100);
-        } else {
-          this.masterGain.gain.setValueAtTime(0.0001, now);
-          this.masterGain.gain.linearRampToValueAtTime(1.0, now + this.fadeDurationSec);
+        const applyRamp = (ctx, masterGain) => {
+          const now = ctx.currentTime;
+          if (this.fadeDurationSec <= 0) {
+            masterGain.gain.setValueAtTime(1.0, now);
+          } else {
+            masterGain.gain.setValueAtTime(0.0001, now);
+            masterGain.gain.linearRampToValueAtTime(1.0, now + this.fadeDurationSec);
+          }
+        };
+
+        applyRamp(this.ctxPrimary, this.masterGainPrimary);
+        if (this.playBothMode && this.ctxSecondary) {
+          applyRamp(this.ctxSecondary, this.masterGainSecondary);
+        }
+
+        if (this.fadeDurationSec > 0) {
           this.fadeStartTime = Date.now();
-
           this.fadeInterval = setInterval(() => {
             const elapsed = (Date.now() - this.fadeStartTime) / 1000;
             const progress = Math.min(100, Math.round((elapsed / this.fadeDurationSec) * 100));
-            this.currentVolume = progress / 100;
-
-            if (this.onFadeProgressCallback) {
-              this.onFadeProgressCallback(progress);
-            }
-
+            if (progressCallback) progressCallback(progress);
             if (progress >= 100) {
               clearInterval(this.fadeInterval);
               this.fadeInterval = null;
             }
           }, 200);
+        } else if (progressCallback) {
+          progressCallback(100);
         }
 
         this.playSoundPattern(soundType);
 
         const intervalMs = soundType === 'digital' ? 1200 : 2800;
         this.loopInterval = setInterval(() => {
-          if (this.isPlaying) {
-            this.playSoundPattern(soundType);
-          }
+          if (this.isPlaying) this.playSoundPattern(soundType);
         }, intervalMs);
       }
 
       stopLoop() {
         this.isPlaying = false;
-        if (this.loopInterval) {
-          clearInterval(this.loopInterval);
-          this.loopInterval = null;
-        }
-        if (this.fadeInterval) {
-          clearInterval(this.fadeInterval);
-          this.fadeInterval = null;
-        }
-        if (this.masterGain && this.ctx) {
-          try {
-            this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
-            this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
-            this.masterGain.disconnect();
-          } catch(e) {}
-          this.masterGain = null;
-        }
+        if (this.loopInterval) clearInterval(this.loopInterval);
+        if (this.fadeInterval) clearInterval(this.fadeInterval);
+
+        const cancelGain = (ctx, masterGain) => {
+          if (ctx && masterGain) {
+            try {
+              masterGain.gain.cancelScheduledValues(ctx.currentTime);
+              masterGain.gain.setValueAtTime(0, ctx.currentTime);
+              masterGain.disconnect();
+            } catch (e) {}
+          }
+        };
+
+        cancelGain(this.ctxPrimary, this.masterGainPrimary);
+        cancelGain(this.ctxSecondary, this.masterGainSecondary);
+        this.masterGainPrimary = null;
+        this.masterGainSecondary = null;
       }
     }
 
@@ -589,6 +561,7 @@
         this.alarmTimeInput = document.getElementById('alarmTime');
         this.alarmLabelInput = document.getElementById('alarmLabel');
         this.alarmSoundSelect = document.getElementById('alarmSound');
+        this.audioModeSelect = document.getElementById('audioModeSelect');
         this.audioOutputSelect = document.getElementById('audioOutputSelect');
         this.selectSpeakerPromptBtn = document.getElementById('selectSpeakerPromptBtn');
         this.alarmFadeSelect = document.getElementById('alarmFade');
@@ -641,32 +614,39 @@
           });
         });
 
-        this.audioOutputSelect.addEventListener('change', (e) => {
-          this.synth.setOutputDevice(e.target.value);
-          this.showToast('Audio output device updated', 'fa-volume-high');
+        const syncAudioConfig = () => {
+          const isBoth = this.audioModeSelect.value === 'both';
+          const sinkId = this.audioOutputSelect.value;
+          this.synth.setModeAndSink(isBoth, sinkId);
+        };
+
+        this.audioModeSelect.addEventListener('change', () => {
+          syncAudioConfig();
+          this.showToast('Audio destination mode updated', 'fa-volume-high');
         });
 
-        // Trigger permission dialog to unlock all speaker names in the dropdown
+        this.audioOutputSelect.addEventListener('change', () => {
+          syncAudioConfig();
+          this.showToast('Target speaker device updated', 'fa-volume-high');
+        });
+
         this.selectSpeakerPromptBtn.addEventListener('click', async () => {
           try {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
               const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              // Stop tracks immediately so mic isn't actively running
               stream.getTracks().forEach(track => track.stop());
-              
-              // Reload audio output devices with full unlocked hardware names
               await this.loadAudioDevices();
               this.showToast('Speaker devices unlocked successfully!', 'fa-circle-check');
             } else {
               this.showToast('Media permissions not supported in this browser', 'fa-triangle-exclamation');
             }
           } catch (err) {
-            console.warn("Permission denied or cancelled", err);
             this.showToast('Permission denied. Speaker names hidden.', 'fa-lock');
           }
         });
 
         this.previewSoundBtn.addEventListener('click', () => {
+          syncAudioConfig();
           const sound = this.alarmSoundSelect.value;
           const fadeSec = parseInt(this.alarmFadeSelect.value, 10);
           
@@ -677,7 +657,7 @@
           } else {
             this.previewSoundBtn.innerHTML = `<i class="fa-solid fa-stop text-red-400"></i>`;
             const testDuration = Math.min(fadeSec, 10);
-            this.synth.startLoopWithFade(sound, testDuration, (pct) => {});
+            this.synth.startLoopWithFade(sound, testDuration, () => {});
             this.showToast(`Testing ${sound} (${fadeSec}s fade)`, 'fa-volume-high');
             
             setTimeout(() => {
@@ -702,6 +682,7 @@
 
         this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
         this.testAudioBtn.addEventListener('click', () => {
+          syncAudioConfig();
           this.synth.startLoopWithFade('chime', 10, (pct) => {
             this.showToast(`Audio Test: Volume ${pct}%`, 'fa-volume-high');
           });
@@ -773,7 +754,6 @@
       startClock() {
         const update = () => {
           const now = new Date();
-          
           let rawHours = now.getHours();
           const rawMinutes = now.getMinutes();
           const rawSeconds = now.getSeconds();
@@ -789,7 +769,6 @@
           }
 
           this.clockSeconds.textContent = `:${String(rawSeconds).padStart(2, '0')}`;
-
           const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
           this.currentDateEl.textContent = now.toLocaleDateString('en-US', options);
 
@@ -1102,6 +1081,10 @@
           this.alarmModal.classList.remove('opacity-0');
           this.alarmModal.firstElementChild.classList.remove('scale-95');
         }, 10);
+
+        const isBoth = this.audioModeSelect.value === 'both';
+        const sinkId = this.audioOutputSelect.value;
+        this.synth.setModeAndSink(isBoth, sinkId);
 
         this.synth.startLoopWithFade(alarm.sound, fadeSec, (progressPct) => {
           this.fadeProgressBar.style.width = `${progressPct}%`;
