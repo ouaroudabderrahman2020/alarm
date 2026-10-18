@@ -194,14 +194,14 @@
             </div>
           </div>
 
-          <!-- Audio Output Device Selection & Trigger -->
+          <!-- Audio Output Device Selection & Unlock Prompt -->
           <div>
             <div class="flex justify-between items-center mb-1.5">
               <label for="audioOutputSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Audio Output (Speaker Selection)
               </label>
-              <button type="button" id="selectSpeakerPromptBtn" class="text-[11px] text-blue-400 hover:underline font-medium">
-                <i class="fa-solid fa-volume-high mr-1"></i>Pick Speaker Prompt
+              <button type="button" id="selectSpeakerPromptBtn" class="text-[11px] text-blue-400 hover:underline font-medium flex items-center gap-1">
+                <i class="fa-solid fa-unlock text-[10px]"></i> Unlock Speakers List
               </button>
             </div>
             <select id="audioOutputSelect" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
@@ -646,18 +646,23 @@
           this.showToast('Audio output device updated', 'fa-volume-high');
         });
 
+        // Trigger permission dialog to unlock all speaker names in the dropdown
         this.selectSpeakerPromptBtn.addEventListener('click', async () => {
           try {
-            if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
-              const device = await navigator.mediaDevices.selectAudioOutput();
-              this.synth.setOutputDevice(device.deviceId);
-              this.loadAudioDevices();
-              this.showToast(`Selected: ${device.label || 'Speaker'}`, 'fa-volume-high');
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              // Stop tracks immediately so mic isn't actively running
+              stream.getTracks().forEach(track => track.stop());
+              
+              // Reload audio output devices with full unlocked hardware names
+              await this.loadAudioDevices();
+              this.showToast('Speaker devices unlocked successfully!', 'fa-circle-check');
             } else {
-              this.showToast('Speaker selection prompt not supported in this browser', 'fa-triangle-exclamation');
+              this.showToast('Media permissions not supported in this browser', 'fa-triangle-exclamation');
             }
           } catch (err) {
-            console.warn("Device selection cancelled or unsupported", err);
+            console.warn("Permission denied or cancelled", err);
+            this.showToast('Permission denied. Speaker names hidden.', 'fa-lock');
           }
         });
 
