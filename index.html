@@ -366,7 +366,6 @@
         }
       }
 
-      // Play tone with gain relative to master volume
       playTone(freq, type = 'sine', duration = 0.5, volume = 0.3) {
         this.initContext();
         try {
@@ -389,7 +388,6 @@
         }
       }
 
-      // Sound Presets
       playSoundPattern(soundType) {
         this.initContext();
         switch (soundType) {
@@ -414,7 +412,7 @@
       }
 
       playChimePattern() {
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, idx) => {
           setTimeout(() => {
             if (this.isPlaying) this.playTone(freq, 'sine', 1.4, 0.3);
@@ -429,7 +427,7 @@
       }
 
       playWavesPattern() {
-        const notes = [220, 277.18, 329.63, 440]; // A3, C#4, E4, A4
+        const notes = [220, 277.18, 329.63, 440];
         notes.forEach((freq, idx) => {
           setTimeout(() => {
             if (this.isPlaying) this.playTone(freq, 'triangle', 2.5, 0.25);
@@ -451,9 +449,6 @@
         }
       }
 
-      /**
-       * Start sound loop with gradual GainNode fade-in ramping
-       */
       startLoopWithFade(soundType, fadeDurationSeconds = 30, progressCallback = null) {
         this.stopLoop();
         this.initContext();
@@ -462,24 +457,20 @@
         this.fadeDurationSec = parseInt(fadeDurationSeconds, 10) || 0;
         this.onFadeProgressCallback = progressCallback;
 
-        // Create Master Gain Node for smooth volume control
         this.masterGain = this.ctx.createGain();
         this.masterGain.connect(this.ctx.destination);
 
         const now = this.ctx.currentTime;
 
         if (this.fadeDurationSec <= 0) {
-          // Immediate - No Fade
           this.masterGain.gain.setValueAtTime(1.0, now);
           this.currentVolume = 1.0;
           if (this.onFadeProgressCallback) this.onFadeProgressCallback(100);
         } else {
-          // Smooth Ramp up using Web Audio API linearRampToValueAtTime
           this.masterGain.gain.setValueAtTime(0.0001, now);
           this.masterGain.gain.linearRampToValueAtTime(1.0, now + this.fadeDurationSec);
           this.fadeStartTime = Date.now();
 
-          // Monitor progress for UI progress bar
           this.fadeInterval = setInterval(() => {
             const elapsed = (Date.now() - this.fadeStartTime) / 1000;
             const progress = Math.min(100, Math.round((elapsed / this.fadeDurationSec) * 100));
@@ -496,10 +487,8 @@
           }, 200);
         }
 
-        // Trigger first pattern immediately
         this.playSoundPattern(soundType);
 
-        // Set repeating pattern interval
         const intervalMs = soundType === 'digital' ? 1200 : 2800;
         this.loopInterval = setInterval(() => {
           if (this.isPlaying) {
@@ -544,22 +533,20 @@
         this.loadSettings();
         this.loadAlarms();
         this.bindEvents();
+        this.requestNotificationPermission();
         this.startClock();
       }
 
       initElements() {
-        // Clock elements
         this.clockHoursMinutes = document.getElementById('clockHoursMinutes');
         this.clockSeconds = document.getElementById('clockSeconds');
         this.clockAmpm = document.getElementById('clockAmpm');
         this.currentDateEl = document.getElementById('currentDate');
         this.nextAlarmBanner = document.getElementById('nextAlarmBanner');
 
-        // Controls
         this.formatToggleBtn = document.getElementById('formatToggleBtn');
         this.formatText = document.getElementById('formatText');
 
-        // Form elements
         this.alarmForm = document.getElementById('alarmForm');
         this.alarmTimeInput = document.getElementById('alarmTime');
         this.alarmLabelInput = document.getElementById('alarmLabel');
@@ -572,12 +559,10 @@
         this.previewSoundBtn = document.getElementById('previewSoundBtn');
         this.dayBtns = document.querySelectorAll('.day-btn');
 
-        // List elements
         this.alarmsList = document.getElementById('alarmsList');
         this.emptyState = document.getElementById('emptyState');
         this.alarmCountBadge = document.getElementById('alarmCountBadge');
 
-        // Modal elements
         this.alarmModal = document.getElementById('alarmModal');
         this.modalAlarmTime = document.getElementById('modalAlarmTime');
         this.modalAlarmLabel = document.getElementById('modalAlarmLabel');
@@ -588,19 +573,16 @@
         this.fadeProgressText = document.getElementById('fadeProgressText');
         this.fadeDurationLabel = document.getElementById('fadeDurationLabel');
 
-        // Header actions
         this.themeToggleBtn = document.getElementById('themeToggleBtn');
         this.themeIcon = document.getElementById('themeIcon');
         this.testAudioBtn = document.getElementById('testAudioBtn');
 
-        // Toast
         this.toast = document.getElementById('toast');
         this.toastMessage = document.getElementById('toastMessage');
         this.toastIcon = document.getElementById('toastIcon');
       }
 
       bindEvents() {
-        // Form & Day Selectors
         this.alarmForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
         this.cancelEditBtn.addEventListener('click', () => this.resetForm());
 
@@ -619,7 +601,6 @@
           });
         });
 
-        // Preview sound with short fade test
         this.previewSoundBtn.addEventListener('click', () => {
           const sound = this.alarmSoundSelect.value;
           const fadeSec = parseInt(this.alarmFadeSelect.value, 10);
@@ -630,15 +611,10 @@
             this.showToast('Preview stopped', 'fa-stop');
           } else {
             this.previewSoundBtn.innerHTML = `<i class="fa-solid fa-stop text-red-400"></i>`;
-            const testDuration = Math.min(fadeSec, 10); // cap preview ramp to 10s for quick demo
-            this.synth.startLoopWithFade(sound, testDuration, (pct) => {
-              if (pct >= 100 && testDuration === 0) {
-                // Auto reset icon after quick preview
-              }
-            });
+            const testDuration = Math.min(fadeSec, 10);
+            this.synth.startLoopWithFade(sound, testDuration, (pct) => {});
             this.showToast(`Testing ${sound} (${fadeSec}s fade)`, 'fa-volume-high');
             
-            // Auto stop preview after 8 seconds
             setTimeout(() => {
               if (this.synth.isPlaying && !this.activeTriggeredAlarm) {
                 this.synth.stopLoop();
@@ -648,7 +624,6 @@
           }
         });
 
-        // Format Toggle
         this.formatToggleBtn.addEventListener('click', () => {
           this.is24HourFormat = !this.is24HourFormat;
           localStorage.setItem('format24h', this.is24HourFormat ? 'true' : 'false');
@@ -657,11 +632,9 @@
           this.showToast(this.is24HourFormat ? 'Switched to 24-Hour Clock' : 'Switched to 12-Hour Clock', 'fa-clock');
         });
 
-        // Modal actions
         this.snoozeBtn.addEventListener('click', () => this.snoozeAlarm());
         this.dismissBtn.addEventListener('click', () => this.dismissAlarm());
 
-        // Header actions
         this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
         this.testAudioBtn.addEventListener('click', () => {
           this.synth.startLoopWithFade('chime', 10, (pct) => {
@@ -670,7 +643,20 @@
           setTimeout(() => this.synth.stopLoop(), 6000);
         });
 
+        // Visibility Change listener: catch up if tab was minimized/backgrounded
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) {
+            this.checkAlarms(new Date());
+          }
+        });
+
         this.setDefaultFormTime();
+      }
+
+      requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+          Notification.requestPermission();
+        }
       }
 
       setDefaultFormTime() {
@@ -681,7 +667,6 @@
         this.alarmTimeInput.value = `${hours}:${minutes}`;
       }
 
-      // --- Theme & Settings ---
       loadSettings() {
         const isDark = localStorage.getItem('theme') !== 'light';
         if (isDark) {
@@ -703,7 +688,6 @@
         this.showToast(isDark ? 'Switched to Dark Mode' : 'Switched to Light Mode', isDark ? 'fa-moon' : 'fa-sun');
       }
 
-      // --- Digital Clock Logic ---
       startClock() {
         const update = () => {
           const now = new Date();
@@ -734,7 +718,6 @@
         setInterval(update, 1000);
       }
 
-      // --- LocalStorage & Alarm CRUD ---
       loadAlarms() {
         try {
           const saved = localStorage.getItem('chrono_alarms_v2');
@@ -852,7 +835,6 @@
         }
       }
 
-      // --- Rendering List ---
       renderAlarms() {
         this.alarmsList.innerHTML = '';
         this.alarmCountBadge.textContent = `${this.alarms.length} ${this.alarms.length === 1 ? 'Alarm' : 'Alarms'}`;
@@ -864,7 +846,6 @@
 
         this.emptyState.classList.add('hidden');
         const sorted = [...this.alarms].sort((a, b) => a.time.localeCompare(b.time));
-
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
         sorted.forEach(alarm => {
@@ -875,7 +856,6 @@
               : 'bg-slate-900/20 border-slate-800/40 opacity-50'
           }`;
 
-          // Time Formatting
           let timeFormatted = alarm.time;
           if (!this.is24HourFormat) {
             const [h, m] = alarm.time.split(':');
@@ -885,26 +865,22 @@
             timeFormatted = `${String(hours).padStart(2, '0')}:${m} ${ampm}`;
           }
 
-          // Repeat days string
           let daysStr = 'Everyday';
           if (alarm.days && alarm.days.length > 0 && alarm.days.length < 7) {
             daysStr = alarm.days.sort().map(d => dayNames[d]).join(', ');
           }
 
-          // Fade text label
           const fadeSec = alarm.fadeDuration !== undefined ? alarm.fadeDuration : 30;
           const fadeLabel = fadeSec === 0 ? 'Immediate' : `${fadeSec}s Fade`;
 
           item.innerHTML = `
             <div class="flex items-center space-x-4">
-              <!-- Toggle Switch -->
               <button onclick="app.toggleAlarmEnabled('${alarm.id}')" title="${alarm.enabled ? 'Disable' : 'Enable'}" class="text-2xl transition-all">
                 ${alarm.enabled 
                   ? '<i class="fa-solid fa-toggle-on text-blue-500"></i>' 
                   : '<i class="fa-solid fa-toggle-off text-slate-600"></i>'
                 }
               </button>
-
               <div>
                 <div class="flex items-center space-x-2">
                   <span class="clock-digit text-xl sm:text-2xl font-bold text-slate-100">${timeFormatted}</span>
@@ -919,7 +895,6 @@
                 </div>
               </div>
             </div>
-
             <div class="flex items-center space-x-1">
               <button onclick="app.editAlarm('${alarm.id}')" class="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all" title="Edit">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -978,33 +953,33 @@
         }
       }
 
-      // --- Triggering Alarm ---
       checkAlarms(nowDate) {
         if (this.activeTriggeredAlarm) return;
 
-        const currentHHMM = `${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`;
-        const currentSeconds = nowDate.getSeconds();
         const currentDay = nowDate.getDay();
+        const currentTimeMs = nowDate.getTime();
 
         this.alarms.forEach(alarm => {
           if (!alarm.enabled) return;
 
-          // Check if specific days were set
           if (alarm.days && alarm.days.length > 0 && !alarm.days.includes(currentDay)) {
             return;
           }
 
-          // Handle Snooze Trigger
           if (alarm.snoozedUntil) {
-            if (nowDate.getTime() >= alarm.snoozedUntil) {
+            if (currentTimeMs >= alarm.snoozedUntil) {
               alarm.snoozedUntil = null;
               this.triggerAlarm(alarm);
             }
             return;
           }
 
-          // Handle Normal Trigger at second 0
-          if (alarm.time === currentHHMM && currentSeconds === 0) {
+          const [alarmH, alarmM] = alarm.time.split(':').map(Number);
+          const alarmTotalMinutes = alarmH * 60 + alarmM;
+          const currentTotalMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+
+          // Buffer window of 5 seconds to prevent missed checks due to tab throttling
+          if (currentTotalMinutes === alarmTotalMinutes && nowDate.getSeconds() <= 5) {
             this.triggerAlarm(alarm);
           }
         });
@@ -1013,7 +988,13 @@
       triggerAlarm(alarm) {
         this.activeTriggeredAlarm = alarm;
 
-        // Modal Time display
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('ChronoPulse Alarm Ringing!', {
+            body: `${alarm.label} (${alarm.time})`,
+            icon: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/bell.svg'
+          });
+        }
+
         let timeDisplay = alarm.time;
         if (!this.is24HourFormat) {
           const [h, m] = alarm.time.split(':');
@@ -1032,18 +1013,15 @@
         const fadeSec = alarm.fadeDuration !== undefined ? alarm.fadeDuration : 30;
         this.fadeDurationLabel.textContent = fadeSec === 0 ? 'Immediate Volume' : `${fadeSec}s Fade Duration`;
 
-        // Reset progress bar
         this.fadeProgressBar.style.width = '0%';
         this.fadeProgressText.textContent = '0%';
 
-        // Display Modal
         this.alarmModal.classList.remove('hidden');
         setTimeout(() => {
           this.alarmModal.classList.remove('opacity-0');
           this.alarmModal.firstElementChild.classList.remove('scale-95');
         }, 10);
 
-        // Start Web Audio Loop with Volume Ramp Fade-In
         this.synth.startLoopWithFade(alarm.sound, fadeSec, (progressPct) => {
           this.fadeProgressBar.style.width = `${progressPct}%`;
           this.fadeProgressText.textContent = `${progressPct}%`;
@@ -1090,7 +1068,6 @@
         }, 300);
       }
 
-      // --- Utilities ---
       showToast(msg, iconClass = 'fa-circle-check') {
         this.toastMessage.textContent = msg;
         this.toastIcon.className = `fa-solid ${iconClass} text-blue-400`;
@@ -1115,7 +1092,6 @@
       }
     }
 
-    // Initialize Application
     let app;
     window.addEventListener('DOMContentLoaded', () => {
       app = new AlarmApp();
