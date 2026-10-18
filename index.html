@@ -194,11 +194,16 @@
             </div>
           </div>
 
-          <!-- Audio Output Device Selector (Speakers/Headphones) -->
+          <!-- Audio Output Device Selection & Trigger -->
           <div>
-            <label for="audioOutputSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Audio Output (Speakers / Headphones)
-            </label>
+            <div class="flex justify-between items-center mb-1.5">
+              <label for="audioOutputSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Audio Output (Speaker Selection)
+              </label>
+              <button type="button" id="selectSpeakerPromptBtn" class="text-[11px] text-blue-400 hover:underline font-medium">
+                <i class="fa-solid fa-volume-high mr-1"></i>Pick Speaker Prompt
+              </button>
+            </div>
             <select id="audioOutputSelect" class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
               <option value="">Default System Output</option>
             </select>
@@ -585,6 +590,7 @@
         this.alarmLabelInput = document.getElementById('alarmLabel');
         this.alarmSoundSelect = document.getElementById('alarmSound');
         this.audioOutputSelect = document.getElementById('audioOutputSelect');
+        this.selectSpeakerPromptBtn = document.getElementById('selectSpeakerPromptBtn');
         this.alarmFadeSelect = document.getElementById('alarmFade');
         this.alarmSnoozeSelect = document.getElementById('alarmSnoozeDuration');
         this.editingAlarmIdInput = document.getElementById('editingAlarmId');
@@ -638,6 +644,21 @@
         this.audioOutputSelect.addEventListener('change', (e) => {
           this.synth.setOutputDevice(e.target.value);
           this.showToast('Audio output device updated', 'fa-volume-high');
+        });
+
+        this.selectSpeakerPromptBtn.addEventListener('click', async () => {
+          try {
+            if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
+              const device = await navigator.mediaDevices.selectAudioOutput();
+              this.synth.setOutputDevice(device.deviceId);
+              this.loadAudioDevices();
+              this.showToast(`Selected: ${device.label || 'Speaker'}`, 'fa-volume-high');
+            } else {
+              this.showToast('Speaker selection prompt not supported in this browser', 'fa-triangle-exclamation');
+            }
+          } catch (err) {
+            console.warn("Device selection cancelled or unsupported", err);
+          }
         });
 
         this.previewSoundBtn.addEventListener('click', () => {
